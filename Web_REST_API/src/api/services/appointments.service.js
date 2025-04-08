@@ -31,18 +31,34 @@ async function getAppointmentsTodayService(doctorId) {
   return citasHoy;
 }
 
-
+//  Obtiene el historial de citas de un doctor (ordenado de reciente a antiguo)
 async function getAppointmentsHistoryService(doctorId) {
-  const today = new Date().toISOString().split('T')[0];
-  const snapshot = await db.collection('appointments')
-    .where('doctorId', '==', doctorId)
-    .where('date', '<', today)
-    .orderBy('date', 'desc')
-    .get();
-  const appointments = [];
-  snapshot.forEach(doc => appointments.push({ id: doc.id, ...doc.data() }));
-  return appointments;
+  const today = new Date().toISOString().split('T')[0];  // Fecha de hoy (sin hora)
+  
+  // Obtener el documento del doctor
+  const doctorDoc = await db.collection('doctors').doc(doctorId).get();
+
+  if (!doctorDoc.exists) {
+    throw new Error("Doctor no encontrado");
+  }
+
+  // Obtener las citas del doctor
+  const doctorData = doctorDoc.data();
+  
+  // Filtrar las citas pasadas (anteriores a la fecha de hoy)
+  const pastAppointments = doctorData.citas.filter(cita => {
+    const citaDate = cita.fechaHora.split('T')[0];  // Extraemos solo la fecha (sin la hora)
+    return citaDate < today;  // Solo citas anteriores al día de hoy
+  });
+
+  // Ordenar las citas de más reciente a más antigua
+  pastAppointments.sort((a, b) => {
+    return new Date(b.fechaHora) - new Date(a.fechaHora);  // Compara las fechas de las citas
+  });
+
+  return pastAppointments;
 }
+
 
 async function getAppointmentsByDateService(doctorId, date) {
   // Obtener el documento del doctor usando el ID
