@@ -3,15 +3,34 @@ const { admin } = require('../../../config/firebase'); // Ruta actualizada
 const db = admin.firestore();
 
 async function getAppointmentsTodayService(doctorId) {
+  // Obtener la fecha de hoy en formato YYYY-MM-DD (sin la hora)
   const today = new Date().toISOString().split('T')[0];
-  const snapshot = await db.collection('appointments')
-    .where('doctorId', '==', doctorId)
-    .where('date', '==', today)
-    .get();
-  const appointments = [];
-  snapshot.forEach(doc => appointments.push({ id: doc.id, ...doc.data() }));
-  return appointments;
+
+  // Obtener el documento del doctor con el ID proporcionado
+  const doctorDoc = await db.collection('doctors').doc(doctorId).get();
+
+  if (!doctorDoc.exists) {
+    throw new Error("Doctor no encontrado");
+  }
+
+  // Obtener las citas del doctor
+  const doctorData = doctorDoc.data();
+  const citasHoy = [];
+
+  // Filtrar las citas que ocurren hoy
+  doctorData.citas.forEach(cita => {
+    const fechaCita = cita.fechaHora.split('T')[0];  // Extrae solo la fecha (sin la hora)
+    
+    // Si la fecha de la cita es igual a la fecha de hoy, la añadimos a la lista
+    if (fechaCita === today) {
+      citasHoy.push(cita);
+    }
+  });
+
+  // Devuelve las citas de hoy
+  return citasHoy;
 }
+
 
 async function getAppointmentsHistoryService(doctorId) {
   const today = new Date().toISOString().split('T')[0];
