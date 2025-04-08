@@ -45,13 +45,24 @@ async function getAppointmentsHistoryService(doctorId) {
 }
 
 async function getAppointmentsByDateService(doctorId, date) {
-  const snapshot = await db.collection('appointments')
-    .where('doctorId', '==', doctorId)
-    .where('date', '==', date)
-    .get();
-  const appointments = [];
-  snapshot.forEach(doc => appointments.push({ id: doc.id, ...doc.data() }));
-  return appointments;
+  // Obtener el documento del doctor usando el ID
+  const doctorDoc = await db.collection('doctors').doc(doctorId).get();
+
+  if (!doctorDoc.exists) {
+    throw new Error("Doctor no encontrado");
+  }
+
+  // Obtener los datos del doctor
+  const doctorData = doctorDoc.data();
+
+  // Filtrar las citas que coinciden con la fecha proporcionada
+  const appointmentsOnDate = doctorData.citas.filter(cita => {
+    // Compara solo la fecha (sin la hora) de la cita
+    const citaDate = cita.fechaHora.split('T')[0];  // Extrae la fecha (sin la hora)
+    return citaDate === date;
+  });
+
+  return appointmentsOnDate;
 }
 
 async function getAppointmentsByPatientService(doctorId, patientId) {
