@@ -10,13 +10,20 @@ async function getDoctorsListService() {
 }
 
 async function addOneDoctorService(doctorData) {
+  // Verifica si la cédula ya está registrada en la base de datos
   const snapshot = await db.collection('doctors').where('cedula', '==', doctorData.cedula).get();
+
+  // Si ya existe un doctor con esa cédula, lanza un error
   if (!snapshot.empty) {
     const error = new Error("La cédula profesional ya está registrada");
-    error.code = 409;
+    error.code = 409;  // Código de error HTTP para conflicto
     throw error;
   }
+
+  // Agrega el nuevo doctor a la colección 'doctors'
   const docRef = await db.collection('doctors').add(doctorData);
+
+  // Devuelve un mensaje de éxito junto con el ID del nuevo doctor
   return { message: "Doctor agregado correctamente", id: docRef.id };
 }
 
@@ -49,13 +56,18 @@ async function giveDoctorVacationsService(idDoctor, startDate, endDate) {
   return { message: "Vacaciones asignadas correctamente" };
 }
 
-async function getAppointmentByIdService(idDoctor, idCita) {
-  const appointmentRef = db.collection('appointments').doc(idCita);
-  const appointmentDoc = await appointmentRef.get();
-  if (!appointmentDoc.exists) return null;
-  const appointmentData = appointmentDoc.data();
-  if (appointmentData.doctorId !== idDoctor) return null;
-  return { id: appointmentDoc.id, ...appointmentData };
+async function getAppointmentByIdService(idDoctor2, idCita) {
+  const doctorRef = db.collection('doctors').doc(idDoctor2);
+  const doctorDoc = await doctorRef.get();
+
+  if (!doctorDoc.exists) return null;
+
+  const doctorData = doctorDoc.data();
+  const appointment = doctorData.citas.find(cita => cita.idCita == idCita);
+
+  if (!appointment) return null;
+
+  return { ...appointment, idDoctor: idDoctor2 };
 }
 
 async function deleteMedicoService(idDoctor) {
@@ -71,17 +83,18 @@ async function deleteMedicoService(idDoctor) {
 
 async function getDoctorAvailabilityService(idDoctor) {
   const doctorDoc = await db.collection('doctors').doc(idDoctor).get();
+
   if (!doctorDoc.exists) {
     return null;
   }
-  return doctorDoc.data().availability || {};
+
+  const data = doctorDoc.data();
+  return data.disponibilidad || [];
 }
 
 async function getSpecialtiesService() {
-  const snapshot = await db.collection('specialties').get();
-  const specialties = [];
-  snapshot.forEach(doc => specialties.push({ id: doc.id, ...doc.data() }));
-  return specialties;
+  const snapshot = await db.collection('especialidades').get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 module.exports = {
