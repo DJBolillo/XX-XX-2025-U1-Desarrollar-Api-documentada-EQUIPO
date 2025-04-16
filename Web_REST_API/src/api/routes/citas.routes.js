@@ -3,14 +3,20 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/authMiddleware');
 const {
-  changeDoctorRequest,
-  deleteAppointment
+  eliminarCita,
+  solicitarCambioMedico,
+  confirmarCita,
 } = require('../controllers/citas.controller');
 
-// PATCH /api/citas/:id/cambiar-medico
-router.patch('/:id/cambiar-medico', authenticateToken, changeDoctorRequest);
 
 // DELETE /api/citas/:id
-router.delete('/:id', authenticateToken, deleteAppointment);
+router.delete('/:id', eliminarCita);
+
+// PATCH /api/citas/:id/cambiar-medico
+router.patch('/:id/cambiar-medico', solicitarCambioMedico);
+//confirmar asistencia
+router.patch('/:idPaciente/appointments/:idCita/confirm', confirmarCita);
+
+
 
 module.exports = router;

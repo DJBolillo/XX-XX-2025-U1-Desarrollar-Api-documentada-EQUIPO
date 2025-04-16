@@ -11,17 +11,17 @@ initializeFirebase();
 app.use(express.json());
 
 // Importar las rutas desde src/api/routes
-const doctorsRoutes = require('./src/api/routes/doctors.routes');
-const appointmentsRoutes = require('./src/api/routes/appointments.routes');
+const doctoresRoutes = require('./src/api/routes/doctors.routes');
 const citasRoutes = require('./src/api/routes/citas.routes');
 const patientsRoutes = require('./src/api/routes/patients.routes');
 const usersRoutes = require('./src/api/routes/users.routes');
 
-app.use('/api/doctors', doctorsRoutes);
-app.use('/api/appointments', appointmentsRoutes);
+
+app.use('/api/doctores', doctoresRoutes);
 app.use('/api/citas', citasRoutes);
 app.use('/api/patients', patientsRoutes);
 app.use('/api/usuarios', usersRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
