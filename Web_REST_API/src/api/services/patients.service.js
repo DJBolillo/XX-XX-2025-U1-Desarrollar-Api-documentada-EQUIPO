@@ -13,13 +13,22 @@ async function sendAppointmentReminderService(idPaciente, idCita, via) {
 }
 
 async function confirmAppointmentStatusService(idPaciente, idCita, confirmada) {
+  if (isNaN(parseInt(idPaciente))) throw new Error("ID de paciente inválido");
+
   const appointmentRef = db.collection('appointments').doc(idCita);
   const appointmentDoc = await appointmentRef.get();
-  if (!appointmentDoc.exists) {
+
+  if (!appointmentDoc.exists || appointmentDoc.data().patientId !== idPaciente) {
     throw new Error("Cita no encontrada");
   }
-  await appointmentRef.update({ confirmed: confirmada });
-  return { message: "Estado de la cita actualizado correctamente" };
+
+  await appointmentRef.update({ confirmada });
+
+  return {
+    mensaje: "Estado de confirmación actualizado correctamente",
+    idCita,
+    confirmada
+  };
 }
 
 module.exports = { sendAppointmentReminderService, confirmAppointmentStatusService };

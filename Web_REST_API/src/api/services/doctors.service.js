@@ -113,16 +113,34 @@ async function getAppointmentByIdService(idDoctor2, idCita) {
   return { ...appointment, idDoctor: idDoctor2 };
 }
 
-async function deleteMedicoService(idDoctor) {
-  const appointmentsSnapshot = await db.collection('appointments')
-    .where('doctorId', '==', idDoctor)
-    .where('status', '==', 'pending')
-    .get();
-  if (!appointmentsSnapshot.empty) {
-    throw new Error("El doctor tiene citas activas y no puede ser eliminado hasta que se reasignen o cancelen");
+async function deleteDoctorService(id) {
+  if (!id.match(/^[a-zA-Z0-9]+$/)) {
+    throw new Error("El ID proporcionado no es válido o tiene un formato incorrecto");
   }
-  await db.collection('doctors').doc(idDoctor).delete();
+
+  const doctorRef = db.collection('doctors').doc(id);
+  const doctorDoc = await doctorRef.get();
+  if (!doctorDoc.exists) {
+    throw new Error("No existe un doctor con el ID proporcionado en la base de datos");
+  }
+
+  const citas = await db.collection('appointments')
+    .where('idDoctor', '==', id)
+    .where('estado', '==', 'pendiente')
+    .get();
+
+  if (!citas.empty) {
+    throw new Error("El doctor tiene citas activas y no puede ser eliminado");
+  }
+
+  await doctorRef.delete();
+  return { mensaje: "Doctor eliminado exitosamente" };
 }
+
+
+module.exports = {
+  deleteDoctorService
+};
 
 async function getDoctorAvailabilityService(idDoctor) {
   const doctorDoc = await db.collection('doctors').doc(idDoctor).get();
@@ -146,7 +164,7 @@ module.exports = {
   updateDoctorDataService,
   giveDoctorVacationsService,
   getAppointmentByIdService,
-  deleteMedicoService,
+  deleteDoctorService,
   getDoctorAvailabilityService,
   getSpecialtiesService
 };

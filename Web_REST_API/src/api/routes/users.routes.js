@@ -6,5 +6,6 @@ const { updateUser } = require('../controllers/users.controller');
 
 // PUT /api/usuarios/:id
 router.put('/:id', authenticateToken, updateUser);
+router.put("/:id", updatePatientController);
 
 module.exports = router;

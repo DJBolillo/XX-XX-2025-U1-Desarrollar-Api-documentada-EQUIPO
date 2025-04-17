@@ -1,51 +1,82 @@
 // controllers/citas.controller.js
 const {
-  changeDoctorRequestService,
-  deleteAppointmentService
+
+
+  eliminarCitaService,
+  cambiarMedico,
+  confirmarAsistencia
 } = require('../services/citas.service');
 
-// Permite solicitar el cambio de médico asignado a una cita
-async function changeDoctorRequest(req, res) {
+
+
+
+
+// Elimina una cita
+const eliminarCita = async (req, res) => {
+  const idCita = req.params.id;
+
   try {
-    const { id } = req.params;
-    const { nuevo_medico_id, motivo } = req.body;
-    const result = await changeDoctorRequestService(id, nuevo_medico_id, motivo);
-    res.status(200).json(result);
+    const mensaje = await eliminarCitaService(idCita);
+    return res.status(200).json({ mensaje });
   } catch (error) {
-    console.error("Error changeDoctorRequest:", error);
-    if (error.message.includes("No se encontró una cita")) {
-      res.status(404).json({ error: "No se encontró una cita con el ID proporcionado" });
-    } else if (error.message.includes("El médico solicitado no está disponible")) {
-      res.status(505).json({ error: "El médico solicitado no está disponible en la fecha y hora de la cita" });
+    const { code, message } = error;
+    return res.status(code || 500).json({ error: message || 'Error interno del servidor' });
+  }
+};
+
+//endpoitn 16
+async function solicitarCambioMedico(req, res) {
+  const citaId = req.params.id;
+  const { nuevoMedicoId, motivo } = req.body;
+
+  try {
+    const resultado = await cambiarMedico(citaId, nuevoMedicoId, motivo);
+    res.status(200).json(resultado);
+  } catch (error) {
+    console.error('Error en solicitarCambioMedico:', error);
+
+    if (error.code === 404) {
+      res.status(404).json({ error: error.message });
+    } else if (error.code === 505) {
+      res.status(505).json({ error: error.message });
     } else {
-      res.status(500).json({ error: "Ocurrió un error al solicitar el cambio de médico. Intente nuevamente más tarde." });
+      res.status(500).json({
+        error: error.message || 'Error interno del servidor',
+        detalle: error.stack,
+      });
     }
   }
 }
 
-// Cancela una cita
-async function deleteAppointment(req, res) {
+async function confirmarCita(req, res) {
+  const idPaciente = req.params.idPaciente;
+  const idCita = req.params.idCita;
+  const { confirmada } = req.body;
+
+  if (confirmada === undefined) {
+    return res.status(400).json({ message: "El campo 'confirmada' es obligatorio" });
+  }
+
   try {
-    const { id } = req.params;
-    await deleteAppointmentService(id);
-    res.status(200).json({ mensaje: "Cita cancelada exitosamente" });
+    const resultado = await confirmarAsistencia(idPaciente, idCita, confirmada);
+    res.status(200).json(resultado);
   } catch (error) {
-    console.error("Error deleteAppointment:", error);
-    if (error.message.includes("El ID proporcionado no es válido")) {
-      res.status(400).json({ error: "El ID proporcionado no es válido" });
-    } else if (error.message.includes("No existe una cita")) {
-      res.status(404).json({ error: "No existe una cita con el ID proporcionado" });
-    } else if (error.message.includes("La cita ya pasó")) {
-      res.status(403).json({ error: "La cita ya pasó y no puede ser cancelada" });
-    } else if (error.message.includes("La cita no pudo ser eliminada")) {
-      res.status(409).json({ error: "La cita no pudo ser eliminada" });
+    console.error("Error en confirmarCita:", error);
+
+    if (error.code === 400) {
+      res.status(400).json({ message: error.message });
+    } else if (error.code === 404) {
+      res.status(404).json({ message: error.message });
     } else {
-      res.status(500).json({ error: "Ocurrió un error al cancelar la cita. Intente nuevamente más tarde." });
+      res.status(500).json({ error: "Ocurrió un error al actualizar la confirmación de la cita" });
     }
   }
 }
+
+
 
 module.exports = {
-  changeDoctorRequest,
-  deleteAppointment
+  eliminarCita,
+  solicitarCambioMedico,
+  confirmarCita,
 };
