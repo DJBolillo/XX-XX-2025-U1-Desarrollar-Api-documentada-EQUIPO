@@ -43,3 +43,9 @@ const options = { expiresIn: '1h' };
 // Genera el token
 const token = jwt.sign(payload, secret, options);
 console.log(token);
+
+//mensaje
+app.get('/', (req, res) => {
+  res.send('API corriendo correctamente 🚀');
+});
+
