@@ -20,7 +20,7 @@ function initializeFirebase() {
       databaseURL: process.env.FIREBASE_DATABASE_URL
     });
 
-    console.log("🔥 Firebase inicializado en Render");
+    console.log("🔥 Firebase inicializado correctamente");
   }
 }
 
