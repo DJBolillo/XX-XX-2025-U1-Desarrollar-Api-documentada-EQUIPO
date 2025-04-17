@@ -42,48 +42,55 @@ async function addOneDoctor(req, res) {
   }
 }
 
-// Actualiza datos del doctor (no permite modificar la especialidad)
+
 async function updateDoctorData(req, res) {
   try {
     const { idDoctor } = req.params;
     const updateData = req.body;
-    const result = await updateDoctorDataService(idDoctor, updateData);
-    res.status(200).json(result);
-  } catch (error) {
-    console.error("Error updateDoctorData:", error);
-    if (error.message.includes("El campo 'especialidad'")) {
-      res.status(400).json({ message: "El campo 'especialidad' no se puede modificar" });
-    } else if (error.message.includes("ID de médico inválido")) {
-      res.status(400).json({ message: "ID de médico inválido" });
-    } else if (error.message.includes("Médico no encontrado")) {
-      res.status(404).json({ message: "Médico no encontrado" });
-    } else {
-      res.status(500).json({ error: "No fue posible actualizar sus datos. Intente nuevamente más tarde." });
+
+    if (!updateData || Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: "Datos inválidos o vacíos" });
     }
+
+    const result = await updateDoctorDataService(idDoctor, updateData);
+    return res.status(200).json(result);
+
+  } catch (error) {
+    console.error("Error updateDoctorData:", error.message);
+
+    if (error.status === 404) {
+      return res.status(404).json({ error: error.message });
+    }
+
+    if (error.status === 400) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.status(500).json({ error: "Error al actualizar el doctor" });
   }
 }
-
-// Asigna o actualiza el periodo de vacaciones de un doctor
 async function giveDoctorVacations(req, res) {
   try {
     const { idDoctor } = req.params;
     const { startDate, endDate } = req.body;
+
     const result = await giveDoctorVacationsService(idDoctor, startDate, endDate);
-    res.status(200).json(result);
+    return res.status(200).json(result);
+
   } catch (error) {
-    console.error("Error giveDoctorVacations:", error);
-    if (error.message.includes("El doctor con ID")) {
-      res.status(404).json({ error: `El doctor con ID ${req.params.idDoctor} no fue encontrado` });
-    } else if (error.message.includes("La fecha de inicio")) {
-      res.status(400).json({ error: "La fecha de inicio debe ser anterior a la fecha de finalización" });
-    } else if (error.message.includes("No se pueden registrar vacaciones en fechas pasadas")) {
-      res.status(400).json({ error: "No se pueden registrar vacaciones en fechas pasadas" });
-    } else {
-      res.status(500).json({ error: "Ocurrió un error al registrar las vacaciones. Intente nuevamente más tarde." });
+    console.error("Error giveDoctorVacations:", error.message);
+
+    if (error.status === 404) {
+      return res.status(404).json({ error: error.message });
     }
+
+    if (error.status === 400) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.status(409).json({ error: "Conflicto al asignar vacaciones." });
   }
 }
-
 // Obtiene los detalles de una cita específica, dado el ID del doctor y de la cita
 async function getAppointmentById(req, res) {
   try {

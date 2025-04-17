@@ -26,34 +26,77 @@ async function addOneDoctorService(doctorData) {
   // Devuelve un mensaje de éxito junto con el ID del nuevo doctor
   return { message: "Doctor agregado correctamente", id: docRef.id };
 }
-
 async function updateDoctorDataService(idDoctor, updateData) {
-  if (updateData.hasOwnProperty('especialidad')) {
-    throw new Error("El campo 'especialidad' no se puede modificar");
-  }
-  const doctorRef = db.collection('doctors').doc(idDoctor);
+  const doctorRef = db.collection("doctors").doc(idDoctor);
   const doctorDoc = await doctorRef.get();
+
   if (!doctorDoc.exists) {
-    throw new Error("Médico no encontrado");
+    const error = new Error("Doctor no encontrado");
+    error.status = 404;
+    throw error;
   }
-  await doctorRef.update(updateData);
-  return { message: "Datos del doctor actualizados correctamente" };
+
+  if ('especialidad' in updateData) {
+    const error = new Error("No se permite modificar la especialidad");
+    error.status = 400;
+    throw error;
+  }
+
+  const camposPermitidos = ['nombre', 'idDoctor'];
+  const datosFiltrados = {};
+  camposPermitidos.forEach(campo => {
+    if (campo in updateData) datosFiltrados[campo] = updateData[campo];
+  });
+
+  if (Object.keys(datosFiltrados).length === 0) {
+    const error = new Error("No se proporcionaron campos válidos para actualizar");
+    error.status = 400;
+    throw error;
+  }
+
+  if ('idDoctor' in datosFiltrados && datosFiltrados.idDoctor !== idDoctor) {
+    const nuevoId = datosFiltrados.idDoctor;
+    await db.collection("doctors").doc(nuevoId).set({
+      ...doctorDoc.data(),
+      ...datosFiltrados
+    });
+    await doctorRef.delete();
+
+    return { message: `Doctor actualizado y movido al nuevo ID '${nuevoId}'. `};
+  }
+
+  await doctorRef.update(datosFiltrados);
+  return { message: "Datos del doctor actualizados correctamente." };
 }
 
+
 async function giveDoctorVacationsService(idDoctor, startDate, endDate) {
-  if (new Date(startDate) >= new Date(endDate)) {
-    throw new Error("La fecha de inicio debe ser anterior a la fecha de finalización");
-  }
-  if (new Date(startDate) < new Date()) {
-    throw new Error("No se pueden registrar vacaciones en fechas pasadas");
-  }
   const doctorRef = db.collection('doctors').doc(idDoctor);
   const doctorDoc = await doctorRef.get();
+
   if (!doctorDoc.exists) {
-    throw new Error(`El doctor con ID ${idDoctor} no fue encontrado`);
+    const error = new Error("Doctor no encontrado");
+    error.status = 404;
+    throw error;
   }
-  await doctorRef.update({ vacation: { startDate, endDate } });
-  return { message: "Vacaciones asignadas correctamente" };
+
+  const today = new Date().toISOString().split('T')[0];
+  if (startDate < today || endDate < today) {
+    const error = new Error("conflicto en las fechas de vacaciones.");
+    error.status = 400;
+    throw error;
+  }
+
+  if (!startDate && !endDate) {
+    await doctorRef.update({ vacaciones: admin.firestore.FieldValue.delete() });
+    return { message: "Vacaciones eliminadas correctamente." };
+  }
+
+  await doctorRef.update({
+    vacaciones: { startDate, endDate }
+  });
+
+  return { message: "Vacaciones asignadas correctamente." };
 }
 
 async function getAppointmentByIdService(idDoctor2, idCita) {

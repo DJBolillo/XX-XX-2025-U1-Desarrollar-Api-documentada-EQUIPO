@@ -30,7 +30,8 @@ router.get('/', authenticateToken, getAppointmentsByPatientName);
 // POST /api/appointments/
 router.post('/', authenticateToken, addOneAppointment);
 
-// PATCH /api/appointments/:idCita/delegate
 router.patch('/:idCita/delegate', authenticateToken, delegateAppointment);
+
+
 
 module.exports = router;
